@@ -48,6 +48,7 @@ jobs:
           npm run build || echo "npm run build failed — check scripts"
         else
           echo "No package.json — skipping frontend build"
+        fi
 
   docker-build:
     runs-on: ubuntu-latest
