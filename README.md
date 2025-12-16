@@ -7,5 +7,7 @@ Core features developed so far include file upload functionality, AI-based summa
 Additional work includes improving UI/UX, adding loading states and error handling, optimizing performance, securing APIs with validation and JWT/Spring Security, and enhancing backend/database efficiency. Ongoing efforts also cover documentation, responsive UI polishing, and preparing the project for deployment.
 
 Live Site & Deployment Status
+
 View Live Site: https://dev-learn-hazel.vercel.app
-Vercel Deployment Status]: https://vercel.com/anukas-projects-fd00d5b2/dev-learn
+
+Vercel Deployment Status: https://vercel.com/anukas-projects-fd00d5b2/dev-learn
