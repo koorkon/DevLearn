@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Upload, FileText, HelpCircle, Cards, Sparkles } from 'lucide-react'
+import { Upload, FileText, HelpCircle, Layers, Sparkles } from 'lucide-react'
 import FileUpload from '../components/upload/FileUpload'
 import FilePreview from '../components/upload/FilePreview'
 import { useApp } from '../context/AppContext'
@@ -23,7 +23,7 @@ export default function UploadPage() {
       benefits: ['Instant feedback', 'Detailed explanations', 'Progress tracking']
     },
     {
-      icon: Cards,
+      icon: Layers,
       title: 'Interactive Flashcards',
       description: 'Master concepts with digital flashcards using spaced repetition techniques.',
       benefits: ['Active recall', 'Spaced repetition', 'Mobile-friendly']

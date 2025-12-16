@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { FileText, HelpCircle, Cards, Upload, TrendingUp, Clock, Target, BookOpen } from 'lucide-react'
+import { FileText, HelpCircle, Layers, Upload, TrendingUp, Clock, Target, BookOpen } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 
@@ -75,7 +75,7 @@ export default function Dashboard() {
       color: 'green'
     },
     {
-      icon: Cards,
+      icon: Layers,
       title: 'Study Flashcards',
       description: 'Review with interactive cards',
       link: '/flashcards',
@@ -198,7 +198,7 @@ export default function Dashboard() {
               </p>
             </div>
             <div className="bg-pink-50 p-3 rounded-xl">
-              <Cards className="h-6 w-6 text-pink-600" />
+              <Layers className="h-6 w-6 text-pink-600" />
             </div>
           </div>
           <div className="flex items-center mt-4 text-sm text-purple-600">

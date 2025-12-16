@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { Upload, FileText, HelpCircle, Cards, ArrowRight, Sparkles, Zap, Star, Rocket, Brain } from 'lucide-react'
+import { Upload, FileText, HelpCircle, Layers, ArrowRight, Sparkles, Zap, Star, Rocket, Brain } from 'lucide-react'
 
 export default function Home() {
   const heroRef = useRef(null)
@@ -54,7 +54,7 @@ export default function Home() {
       delay: '300'
     },
     {
-      icon: Cards,
+      icon: Layers,
       title: 'Flashcards',
       description: 'Master concepts with interactive flashcards using spaced repetition techniques.',
       color: 'from-orange-500 to-red-500',
