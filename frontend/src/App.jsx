@@ -1,5 +1,6 @@
 import React from 'react'
 import { Routes, Route } from 'react-router-dom'
+import { Analytics } from '@vercel/analytics/react'
 import { AppProvider } from './context/AppContext'
 import Header from './components/common/Header'
 import Footer from './components/common/Footer'
@@ -28,6 +29,7 @@ function App() {
           </Routes>
         </main>
         <Footer />
+        <Analytics />
       </div>
     </AppProvider>
   )

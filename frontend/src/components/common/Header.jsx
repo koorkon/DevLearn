@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Brain, Upload, FileText, HelpCircle, Cards, Menu, X } from 'lucide-react'
+import { Brain, Upload, FileText, HelpCircle, Layers, Menu, X } from 'lucide-react'
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
@@ -21,7 +21,7 @@ export default function Header() {
     { path: '/upload', label: 'Upload', icon: Upload },
     { path: '/summaries', label: 'Summaries', icon: FileText },
     { path: '/mcqs', label: 'MCQs', icon: HelpCircle },
-    { path: '/flashcards', label: 'Flashcards', icon: Cards },
+    { path: '/flashcards', label: 'Flashcards', icon: Layers },
   ]
 
   return (
