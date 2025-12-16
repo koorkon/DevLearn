@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Cards, Zap, Target, RotateCcw } from 'lucide-react'
+import { Plus, Layers, Zap, Target, RotateCcw } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import FlashcardDeck from '../components/flashcard/FlashcardDeck'
 import FlashcardViewer from '../components/flashcard/FlashcardViewer'
@@ -119,7 +119,7 @@ export default function FlashcardPage() {
             to="/upload"
             className="flex items-center space-x-2 bg-white text-gray-700 px-6 py-3 rounded-xl font-semibold border-2 border-gray-200 hover:border-primary-300 hover:bg-primary-25 transition-all"
           >
-            <Cards className="h-5 w-5" />
+            <Layers className="h-5 w-5" />
             <span>Upload Document</span>
           </Link>
         </div>
@@ -137,7 +137,7 @@ export default function FlashcardPage() {
                 </p>
               </div>
               <div className="bg-blue-50 p-3 rounded-xl">
-                <Cards className="h-6 w-6 text-blue-600" />
+                <Layers className="h-6 w-6 text-blue-600" />
               </div>
             </div>
           </div>
@@ -191,7 +191,7 @@ export default function FlashcardPage() {
         <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-200">
           <div className="max-w-md mx-auto space-y-6">
             <div className="bg-pastel-purple w-20 h-20 rounded-2xl flex items-center justify-center mx-auto">
-              <Cards className="h-10 w-10 text-purple-600" />
+              <Layers className="h-10 w-10 text-purple-600" />
             </div>
             <div className="space-y-2">
               <h3 className="text-xl font-semibold text-gray-900">

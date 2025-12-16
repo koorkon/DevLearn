@@ -9,8 +9,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
+    "@vercel/analytics": "^1.6.1",
+    "autoprefixer": "^10.4.23",
+    "axios": "^1.13.2",
+    "lucide-react": "^0.561.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-dropzone": "^14.3.8",
+    "react-router-dom": "^7.10.1",
+    "tailwindcss": "^4.1.18"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.1.1",
