@@ -1,236 +1,266 @@
+// components/FileSummary.jsx
 import React, { useState } from 'react';
 
+// Define the API URL based on your backend configuration
+// Your server runs on port 5000 and the summary route is '/api/summary'
+const API_URL = 'http://localhost:5000/api/summary/upload'; 
+
 const FileSummary = () => {
-  const [fileContent, setFileContent] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState('');
-  const [error, setError] = useState(null);
-  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isCopied, setIsCopied] = useState(false);
+  // stats object will hold { originalLength, summaryLength, reductionPercentage }
+  const [stats, setStats] = useState(null); 
 
-  const handleFileSelect = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setError('File size exceeds 5MB limit');
-        return;
-      }
-      setSelectedFile(file);
-      setFileContent('');
-      setError(null);
-    }
-  };
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
 
-  const handleTextChange = (e) => {
-    setFileContent(e.target.value);
-    setSelectedFile(null);
-    setError(null);
-  };
-
-  const generateSummary = async () => {
-    if (!fileContent.trim() && !selectedFile) {
-      setError('Please provide content to summarize');
+    const allowedTypes = ['text/plain', 'application/pdf', 'application/msword', 
+                         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    
+    if (!allowedTypes.includes(file.type)) {
+      alert('Please select a valid file type (TXT, PDF, DOC, DOCX)');
       return;
     }
 
-    setLoading(true);
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB');
+      return;
+    }
+
+    setSelectedFile(file);
     setSummary('');
-    setError(null);
-    setStats(null);
+    setUploadProgress(0);
+    setIsCopied(false);
+    setStats(null); // Reset stats
+
+    // Start the API call to generate the summary
+    generateSummaryFromAPI(file);
+  };
+
+  const handleCopy = () => {
+    if (summary && !summary.startsWith("Error:")) {
+      navigator.clipboard.writeText(summary)
+        .then(() => {
+          setIsCopied(true);
+          setTimeout(() => {
+            setIsCopied(false);
+          }, 2000); 
+        })
+        .catch(err => {
+          console.error('Failed to copy text: ', err);
+          alert('Failed to copy summary. Please try again.');
+        });
+    }
+  };
+
+  /**
+   * Handles file upload and summary generation by calling the backend API.
+   * @param {File} file The file selected by the user.
+   */
+  const generateSummaryFromAPI = async (file) => {
+    setLoading(true);
+    setUploadProgress(10); // Start progress
+
+    const formData = new FormData();
+    // 'file' must match the field name used in the multer configuration ('upload.single('file')')
+    formData.append('file', file); 
 
     try {
-      let response;
-      
-      if (selectedFile) {
-        const formData = new FormData();
-        formData.append('file', selectedFile);
-        
-        response = await fetch('http://localhost:5000/api/summary/upload', {
-          method: 'POST',
-          body: formData,
-        });
-      } else {
-        response = await fetch('http://localhost:5000/api/summary/text', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: fileContent }),
-        });
-      }
+      // Simulate Upload/Processing Progress (up to 90%)
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => Math.min(prev + 10, 90));
+      }, 500);
 
-      // Check if response is ok
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        body: formData,
+      });
+
+      // Clear the simulation interval once the request is complete
+      clearInterval(progressInterval);
+
       if (!response.ok) {
-        throw new Error(`Server error: ${response.status}`);
+        // Attempt to parse JSON error response for specific message
+        let errorMsg = `Server responded with status: ${response.status}`;
+        try {
+            const errorData = await response.json();
+            errorMsg = errorData.error || errorMsg;
+        } catch (e) {
+            // If response is not JSON, use the default message
+        }
+        throw new Error(errorMsg);
       }
 
       const data = await response.json();
-
+      
       if (data.success) {
         setSummary(data.summary);
-        if (data.stats) {
-          setStats(data.stats);
-        }
+        setStats(data.stats); 
+        setUploadProgress(100); // Complete progress
       } else {
-        setError(data.error || 'Unable to generate summary at this time. Please try again.');
+        // Handle server-side failure that returns 200 status but success: false
+        throw new Error(data.error || 'Summary generation failed on the server.');
       }
 
-    } catch (err) {
-      console.error('Summary error:', err);
-      setError('Unable to connect to the service. Please check your connection and try again.');
+    } catch (error) {
+      console.error('Error generating summary:', error.message);
+      setSummary(`Error: Failed to generate summary. \n\nDetails: ${error.message}.\n\n(Troubleshooting Tip: Ensure your backend server is running and your OpenAI API Key is valid.)`);
+      setStats(null);
+      setUploadProgress(0);
     } finally {
       setLoading(false);
     }
   };
 
-  const clearAll = () => {
-    setFileContent('');
-    setSelectedFile(null);
-    setSummary('');
-    setError(null);
-    setStats(null);
-  };
+  const currentStats = stats;
 
   return (
     <div className="p-8">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Input Section */}
-        <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-white">Upload or Paste</h2>
-
-          {/* Error Alert */}
-          {error && (
-            <div className="glass-dark rounded-xl p-4 border border-red-500/30 bg-red-500/10">
-              <p className="text-red-300 text-sm flex items-start">
-                <span className="mr-3">⚠️</span>
-                <span>{error}</span>
-              </p>
-            </div>
-          )}
-
-          {/* File Upload */}
-          <div className="glass-dark rounded-xl p-6 border border-white/10 hover:border-blue-500/30 transition-all">
-            <label className="block">
-              <span className="text-gray-300 font-semibold block mb-3">📄 Upload Document</span>
-              <span className="text-gray-500 text-xs block mb-3">Supports: TXT, PDF, DOC, DOCX (Max 5MB)</span>
-              <input
-                type="file"
-                accept=".txt,.pdf,.doc,.docx"
-                onChange={handleFileSelect}
-                disabled={loading}
-                className="w-full text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-500 file:text-white hover:file:bg-blue-600 disabled:opacity-50 cursor-pointer"
-              />
+      <h2 className="mb-6 text-3xl font-extrabold text-white">AI File Summary</h2>
+      
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+        {/* Left Side: Upload & Input */}
+        <div className="md:col-span-1">
+          <div className="p-6 mb-6 border shadow-xl glass-dark rounded-2xl border-white/10">
+            <label className="block mb-3 text-sm font-medium text-gray-300">
+              1. Select a file (TXT, PDF, DOCX)
             </label>
-            {selectedFile && (
-              <p className="text-sm text-green-400 mt-3">✓ {selectedFile.name} selected</p>
+            <input 
+              type="file"
+              onChange={handleFileSelect}
+              className="block w-full text-sm text-white cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700"
+              accept=".txt,.pdf,.doc,.docx"
+              disabled={loading} 
+            />
+          </div>
+
+          <div className="p-6 border shadow-xl glass-dark rounded-2xl border-white/10">
+            <h3 className="mb-4 text-xl font-bold text-white">File Status</h3>
+            {selectedFile ? (
+              <div>
+                <p className="mb-2 text-sm text-gray-300">
+                  <span className="font-semibold">File:</span> {selectedFile.name}
+                </p>
+                <p className="mb-4 text-sm text-gray-300">
+                  <span className="font-semibold">Size:</span> {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                </p>
+                
+                {loading && (
+                  <div>
+                    <p className="mb-2 text-sm text-purple-400">Processing...</p>
+                    <div className="w-full bg-gray-700 rounded-full h-2.5">
+                      <div 
+                        className="bg-purple-500 h-2.5 rounded-full transition-all duration-500" 
+                        style={{ width: `${uploadProgress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+
+                {summary && !summary.startsWith("Error:") && (
+                  <p className="mt-4 text-sm font-semibold text-green-400">
+                    ✅ Summary Generated!
+                  </p>
+                )}
+                 {summary && summary.startsWith("Error:") && (
+                  <p className="mt-4 text-sm font-semibold text-red-400">
+                    ❌ Summary Error!
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400">No file selected.</p>
             )}
-          </div>
-
-          {/* Divider */}
-          <div className="flex items-center space-x-4">
-            <div className="flex-1 border-t border-white/10"></div>
-            <span className="text-gray-500 text-xs uppercase">or</span>
-            <div className="flex-1 border-t border-white/10"></div>
-          </div>
-
-          {/* Text Input */}
-          <div className="glass-dark rounded-xl p-6 border border-white/10 hover:border-blue-500/30 transition-all">
-            <label className="block">
-              <span className="text-gray-300 font-semibold block mb-3">✏️ Paste Text</span>
-              <textarea
-                value={fileContent}
-                onChange={handleTextChange}
-                placeholder="Paste your text here..."
-                disabled={loading}
-                rows={10}
-                className="w-full bg-black/30 text-white border border-white/20 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500 resize-none disabled:opacity-50"
-              />
-            </label>
-            <p className="text-gray-500 text-xs mt-2">
-              {fileContent.length} characters
-            </p>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-3">
-            <button
-              onClick={generateSummary}
-              disabled={(!fileContent.trim() && !selectedFile) || loading}
-              className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-400 text-white py-3 rounded-lg font-bold hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center">
-                  <span className="animate-spin mr-2">⏳</span> Generating...
-                </span>
-              ) : (
-                'Generate Summary'
-              )}
-            </button>
-            <button
-              onClick={clearAll}
-              disabled={loading}
-              className="flex-1 bg-white/10 text-white py-3 rounded-lg font-bold hover:bg-white/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Clear
-            </button>
           </div>
         </div>
 
-        {/* Output Section */}
-        <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-white">Summary Result</h2>
-
-          {/* Stats */}
-          {stats && (
-            <div className="grid grid-cols-3 gap-3">
-              <div className="glass-dark rounded-lg p-4 border border-white/10 text-center">
-                <p className="text-gray-400 text-xs uppercase mb-1">Original</p>
-                <p className="text-white font-bold">{stats.originalLength}</p>
-                <p className="text-gray-500 text-xs">chars</p>
-              </div>
-              <div className="glass-dark rounded-lg p-4 border border-white/10 text-center">
-                <p className="text-gray-400 text-xs uppercase mb-1">Summary</p>
-                <p className="text-white font-bold">{stats.summaryLength}</p>
-                <p className="text-gray-500 text-xs">chars</p>
-              </div>
-              <div className="glass-dark rounded-lg p-4 border border-white/10 text-center">
-                <p className="text-gray-400 text-xs uppercase mb-1">Reduction</p>
-                <p className="text-green-400 font-bold">{stats.reductionPercentage}%</p>
-                <p className="text-gray-500 text-xs">compressed</p>
+        {/* Right Side: Summary Result */}
+        <div className="md:col-span-2">
+          {loading && !summary ? (
+            <div className="flex items-center justify-center h-full border glass-dark rounded-2xl border-white/10 min-h-96">
+              <div className="p-8 text-center">
+                <svg className="w-8 h-8 mx-auto mb-4 text-purple-400 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p className="text-lg text-purple-400">Generating AI Summary...</p>
+                <p className="mt-1 text-sm text-gray-400">Analyzing {selectedFile?.name} ({uploadProgress}%)</p>
               </div>
             </div>
-          )}
+          ) : summary ? (
+            <div className="h-full p-6 border shadow-2xl glass-dark rounded-2xl border-white/10">
+              <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/10">
+                <h3 className="text-2xl font-bold text-cyan-400">AI Summary Result</h3>
+                
+                <button
+                  onClick={handleCopy}
+                  className={`px-4 py-2 rounded-lg transition-all duration-300 font-medium text-sm flex items-center space-x-2 ${
+                    isCopied
+                      ? 'bg-green-600 hover:bg-green-700 text-white' 
+                      : 'bg-white/10 hover:bg-white/20 text-white'
+                  }`}
+                  disabled={isCopied || summary.startsWith("Error:")} 
+                >
+                  {isCopied ? (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                      <span>Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                      <span>Copy Summary</span>
+                    </>
+                  )}
+                </button>
+              </div>
 
-          {/* Summary Content */}
-          <div className="glass-dark rounded-xl p-6 border border-white/10 min-h-96 max-h-96 overflow-y-auto">
-            {!summary ? (
-              <div className="flex flex-col items-center justify-center h-full text-center">
-                <p className="text-gray-500 text-lg">📝</p>
-                <p className="text-gray-400 mt-3">
-                  {loading ? 'Analyzing your content...' : 'Summary will appear here'}
+              {/* Summary Text */}
+              <div className="mb-6 max-h-[400px] overflow-y-auto pr-2">
+                <p className={`text-lg font-light leading-relaxed whitespace-pre-wrap ${summary.startsWith("Error:") ? 'text-red-400' : 'text-white'}`}>
+                  {summary}
                 </p>
               </div>
-            ) : (
-              <div className="text-gray-200 space-y-3">
-                {summary.split('\n').filter(line => line.trim()).map((line, idx) => (
-                  <p key={idx} className="text-sm leading-relaxed">
-                    {line}
-                  </p>
-                ))}
-              </div>
-            )}
-          </div>
 
-          {/* Copy Button */}
-          {summary && (
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(summary);
-                alert('Summary copied to clipboard!');
-              }}
-              className="w-full bg-white/10 text-white py-2 rounded-lg font-semibold hover:bg-white/20 transition-all text-sm"
-            >
-              📋 Copy Summary
-            </button>
+              {/* Summary Statistics - Only show if stats are available and no error */}
+              {currentStats && !summary.startsWith("Error:") && (
+                <div className="flex items-center justify-around pt-4 border-t border-white/10">
+                  <div className="text-center">
+                    <div className={`text-2xl font-bold ${currentStats.reductionPercentage > 50 ? 'text-green-400' : 'text-yellow-400'}`}>
+                      {currentStats.reductionPercentage}%
+                    </div>
+                    <div className="text-sm text-gray-400">Reduction</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-purple-400">
+                      {currentStats.originalLength}
+                    </div>
+                    <div className="text-sm text-gray-400">Original Chars</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-cyan-400">
+                      {currentStats.summaryLength}
+                    </div>
+                    <div className="text-sm text-gray-400">Summary Chars</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            // Empty state
+            <div className="flex items-center justify-center h-full border glass-dark rounded-2xl border-white/10 min-h-96">
+              <div className="p-8 text-center text-gray-400">
+                <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 border rounded-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 border-blue-500/30">
+                  <span className="text-2xl">📝</span>
+                </div>
+                <p className="text-lg">AI Summary will appear here</p>
+                <p className="mt-2 text-sm">Upload a file and get a summary!</p>
+              </div>
+            </div>
           )}
         </div>
       </div>

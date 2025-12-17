@@ -52,3 +52,34 @@ html {
 .glow-purple {
   box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
 }
+/* Add to src/App.css */
+
+/* ---------------- Flashcard 3D Fix ---------------- */
+
+/* 1. Container for the perspective */
+.flashcard-3d-container {
+  perspective: 1000px; /* Required for 3D effect */
+  /* If you don't have overflow-visible, add it here */
+  overflow: visible; 
+}
+
+/* 2. Wrapper for the flip transformation */
+.flashcard-3d-wrapper {
+  transform-style: preserve-3d; /* Key to making the front/back faces work in 3D */
+}
+
+/* 3. Front and Back faces */
+.flashcard-face {
+  backface-visibility: hidden; /* 🚀 THE FIX: Hides the back side when turned away */
+  -webkit-backface-visibility: hidden; /* For Safari compatibility */
+}
+
+/* 4. Rotation helper class (to match your Tailwind rotation) */
+.rotateY-180 {
+  transform: rotateY(180deg);
+}
+
+.flashcard-back {
+  /* Ensure the back face starts flipped */
+  transform: rotateY(180deg);
+}
