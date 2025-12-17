@@ -1,0 +1,22 @@
+services:
+  # Backend Service
+  backend:
+    build: ./backend
+    container_name: devlearn-backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend/uploads:/app/uploads
+    restart: always
+
+  # Frontend Service (Nginx)
+  frontend:
+    build: ./frontend
+    container_name: devlearn-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: always

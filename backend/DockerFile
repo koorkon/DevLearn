@@ -1,4 +1,7 @@
-FROM openjdk:17-jdk-slim
+FROM node:20-alpine
 WORKDIR /app
+COPY ../package*.json ./
+RUN npm install --production
 COPY . .
-CMD ["echo", "Backend placeholder container"]
+EXPOSE 5000
+CMD ["npm", "start"]
