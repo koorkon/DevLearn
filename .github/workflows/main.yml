@@ -25,7 +25,7 @@ jobs:
 
       - name: Install & Test Frontend
         env:
-          OPENAI_API_KEY: "dummy_key_for_testing_only"
+          OPENAI_API_KEY: "testing"
         run: |
           cd frontend
           npm install
