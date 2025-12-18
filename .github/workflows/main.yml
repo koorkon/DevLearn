@@ -1,10 +1,15 @@
 name: DevLearn CI/CD Pipeline
 
+# on:
+#   push:
+#     branches: [ "main", "feature/UI" ] # Runs when you push to these branches
+#   pull_request:
+#     branches: [ "main" ]
+
 on:
   push:
-    branches: [ "main", "feature/UI" ] # Runs when you push to these branches
-  pull_request:
-    branches: [ "main" ]
+    branches: [ feature/UI ]
+  workflow_dispatch: # This allows you to click a "Run" button on GitHub
 
 jobs:
   test:

@@ -1,5 +1,5 @@
 const request = require('supertest');
-const app = require('../server'); // Import your app
+const app = require('../app'); // Adjust the path to your Express app
 
 describe('Backend API Tests', () => {
   it('should return a 200 status for the health check', async () => {
