@@ -1,4 +1,4 @@
-name: CI/CD - Build Test Docker
+name: CI/CD - Node Backend & React Frontend
 
 on:
   push:
@@ -14,41 +14,27 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # ---------------------------
-    # BACKEND BUILD (MAVEN)
-    # ---------------------------
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: temurin
-        java-version: '17'
-
-    - name: Backend Build (Maven)
-      working-directory: backend
-      run: |
-        if [ -f pom.xml ]; then
-          mvn -B clean verify || mvn -B clean install -DskipTests=true
-        else
-          echo "No pom.xml — skipping backend build"
-        fi
-
-    # ---------------------------
-    # FRONTEND BUILD (NODE)
-    # ---------------------------
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
 
-    - name: Frontend Build (npm)
+    - name: Install Backend Dependencies
+      working-directory: backend
+      run: npm install
+
+    - name: Install Frontend Dependencies
       working-directory: frontend
       run: |
         if [ -f package.json ]; then
           npm ci
-          npm run build || echo "npm run build failed — check scripts"
         else
           echo "No package.json — skipping frontend build"
         fi
+
+    - name: Build Frontend
+      working-directory: frontend
+      run: npm run build
 
   docker-build:
     runs-on: ubuntu-latest
@@ -58,18 +44,18 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Build Frontend Docker Image
-      run: |
-        if [ -f frontend/Dockerfile ]; then
-          docker build -t frontend-test:latest ./frontend
-        else
-          echo "No frontend Dockerfile found"
-        fi
-
     - name: Build Backend Docker Image
       run: |
-        if [ -f backend/Dockerfile ]; then
-          docker build -t backend-test:latest ./backend
+        if [ -f backend/DockerFile ]; then
+          docker build -t backend-test -f backend/DockerFile backend
         else
-          echo "No backend Dockerfile found"
+          echo "Backend DockerFile not found"
+        fi
+
+    - name: Build Frontend Docker Image
+      run: |
+        if [ -f frontend/DockerFile ]; then
+          docker build -t frontend-test -f frontend/DockerFile frontend
+        else
+          echo "Frontend DockerFile not found"
         fi
