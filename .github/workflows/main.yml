@@ -6,7 +6,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  # --- STAGE 1: TESTING ---
   test:
     runs-on: ubuntu-latest
     steps:
@@ -22,17 +21,16 @@ jobs:
         working-directory: ./backend
         run: |
           npm install
-          # npm test  <-- Uncomment this when you have tests written
+          npm test  
 
       - name: Test Frontend
         working-directory: ./frontend
         run: |
           npm install
-          # npm test  <-- Uncomment this when you have tests written
+          npm test
 
-  # --- STAGE 2: BUILD AND PUSH ---
   build-and-push:
-    needs: test  # Only runs if tests pass
+    needs: test 
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -75,9 +73,8 @@ jobs:
           # This forces the build to use Port 5173 and no-cache
           tags: ${{ secrets.DOCKER_USERNAME }}/devlearn-frontend:latest
 
-  # --- STAGE 3: DEPLOYMENT ---
   deploy:
-    needs: build-and-push # Only runs if build is successful
+    needs: build-and-push 
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -88,4 +85,3 @@ jobs:
           echo "Verifying docker-compose.yml for port 5173..."
           grep "5173" docker-compose.yml
           echo "Ready for deployment!"
-
