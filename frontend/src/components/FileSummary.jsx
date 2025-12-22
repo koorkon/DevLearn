@@ -1,7 +1,6 @@
 // components/FileSummary.jsx
 import React, { useState } from 'react';
 
-// Define the API URL based on your backend configuration
 const API_URL = 'http://localhost:5000/api/summary/upload'; 
 
 const FileSummary = () => {

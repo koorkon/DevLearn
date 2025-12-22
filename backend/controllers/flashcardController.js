@@ -1,57 +1,34 @@
-const openaiService = require('../services/openaiService');
+const aiService = require('../services/aiService');
+const fileService = require('../services/fileService');
 
-class FlashcardController {
-  async generateFlashcards(req, res) {
-    try {
-      const { topic } = req.body;
+const generateFlashcards = async (req, res) => {
+  try {
+    const { topic } = req.body;
 
-      if (!topic || !topic.trim()) {
-        return res.status(400).json({ success: false, error: 'Topic is required' });
-      }
-
-      const flashcards = await openaiService.generateFlashcards(topic);
-
-      res.json({
-        success: true,
-        topic: topic.trim(),
-        flashcards: flashcards,
-        count: flashcards.length,
-        generatedAt: new Date().toISOString()
-      });
-
-    } catch (error) {
-      console.error('Flashcard generation error:', error);
-      res.status(500).json({ 
-        success: false, 
-        error: 'Failed to generate flashcards',
-        ...(process.env.NODE_ENV === 'development' && { details: error.message })
-      });
+    if (!topic) {
+      return res.status(400).json({ error: "Topic is required" });
     }
+
+    const flashcards = await aiService.generateFlashcards(topic);
+
+    res.json({ success: true, flashcards });
+  } catch (error) {
+    console.error("Flashcard Controller Error:", error.message);
+    res.status(500).json({ 
+      error: "Failed to generate cards.", 
+      details: error.message 
+    });
   }
+};
 
-  async getDefaultFlashcards(req, res) {
-    try {
-      const { topic } = req.query;
+const getDefaultFlashcards = async (req, res) => {
+  const defaultCards = [
+    { question: "What is an Atom?", answer: "The basic unit of a chemical element." }
+  ];
+  res.json({ success: true, flashcards: defaultCards });
+};
 
-      if (!topic || !topic.trim()) {
-        return res.status(400).json({ success: false, error: 'Topic query parameter is required' });
-      }
-
-      const flashcards = openaiService.getDefaultFlashcards(topic);
-
-      res.json({
-        success: true,
-        topic: topic.trim(),
-        flashcards: flashcards,
-        count: flashcards.length,
-        note: 'Default flashcards (AI service unavailable)'
-      });
-
-    } catch (error) {
-      console.error('Error getting default flashcards:', error);
-      res.status(500).json({ success: false, error: 'Failed to get flashcards' });
-    }
-  }
-}
-
-module.exports = new FlashcardController();
+module.exports = {
+  generateFlashcards,
+  getDefaultFlashcards
+};

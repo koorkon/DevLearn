@@ -1,56 +1,53 @@
+require('dotenv').config(); // Load variables first!
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 
-// Load environment variables
-dotenv.config();
-
-// Import routes
+// Import Routes
 const summaryRoutes = require('./routes/summary');
-const flashcardRoutes = require('./routes/flashcard');
 const mcqRoutes = require('./routes/mcq');
+const flashcardRoutes = require('./routes/flashcard');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Rate limiting
-const limiter = rateLimit({
+const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
-  max: 100 
+  max: 100, 
+  message: { error: "Too many requests, please try again later." }
 });
 
-// Middleware
-app.use(helmet());
-app.use(limiter);
 app.use(cors({
+<<<<<<< HEAD
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
+=======
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
+>>>>>>> dfbe23a (Final website commit)
 }));
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use('/api/', apiLimiter);
 
-// Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// API Routes
 app.use('/api/summary', summaryRoutes);
-app.use('/api/flashcards', flashcardRoutes);
 app.use('/api/mcq', mcqRoutes);
+app.use('/api/flashcards', flashcardRoutes);
 
-// Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    service: 'DevLearn Backend API'
+  res.json({ 
+    status: 'Backend is running',
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
+<<<<<<< HEAD
 // 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
@@ -72,3 +69,9 @@ if (process.env.NODE_ENV !== 'test') {
   });
 }
 module.exports = app;
+=======
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`📝 Summary API: http://localhost:${PORT}/api/summary/upload`);
+});
+>>>>>>> dfbe23a (Final website commit)

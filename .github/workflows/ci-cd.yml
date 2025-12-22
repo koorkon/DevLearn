@@ -27,7 +27,7 @@ jobs:
       working-directory: frontend
       run: |
         if [ -f package.json ]; then
-          npm ci
+          npm install
         else
           echo "No package.json — skipping frontend build"
         fi
@@ -46,16 +46,16 @@ jobs:
 
     - name: Build Backend Docker Image
       run: |
-        if [ -f backend/DockerFile ]; then
-          docker build -t backend-test -f backend/DockerFile backend
+        if [ -f backend/Dockerfile ]; then
+          docker build -t backend-test -f backend/Dockerfile backend
         else
-          echo "Backend DockerFile not found"
+          echo "Backend Dockerfile not found"
         fi
 
     - name: Build Frontend Docker Image
       run: |
-        if [ -f frontend/DockerFile ]; then
-          docker build -t frontend-test -f frontend/DockerFile frontend
+        if [ -f frontend/Dockerfile ]; then
+          docker build -t frontend-test -f frontend/Dockerfile frontend
         else
-          echo "Frontend DockerFile not found"
+          echo "Frontend Dockerfile not found"
         fi

@@ -1,59 +1,41 @@
 const fs = require('fs').promises;
-const path = require('path');
 const pdf = require('pdf-parse');
-const mammoth = require('mammoth');
 
 class FileService {
-  constructor() {
-    this.uploadsDir = path.join(__dirname, '../uploads');
-    this.ensureUploadsDir();
-  }
+  async extractText(file) {
+    if (!file) throw new Error("No file uploaded");
 
-  async ensureUploadsDir() {
     try {
-      await fs.mkdir(this.uploadsDir, { recursive: true });
-    } catch (error) {
-      console.error('Error creating uploads directory:', error);
-    }
-  }
+      const dataBuffer = await fs.readFile(file.path);
+      
+      // options to ensure we get all pages
+      const options = {
+        pagerender: function(pageData) {
+          return pageData.getTextContent()
+            .then(function(textContent) {
+              return textContent.items.map(item => item.str).join(' ');
+            });
+        }
+      };
 
-  async extractText(filePath, fileType) {
-    try {
-      switch (fileType) {
-        case 'text/plain':
-          const textContent = await fs.readFile(filePath, 'utf-8');
-          return textContent;
-        
-        case 'application/pdf':
-          const dataBuffer = await fs.readFile(filePath);
-          const pdfData = await pdf(dataBuffer);
-          return pdfData.text;
-        
-        case 'application/msword':
-        case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-          const docResult = await mammoth.extractRawText({ path: filePath });
-          return docResult.value;
-        
-        default:
-          throw new Error('Unsupported file type');
+      const data = await pdf(dataBuffer);
+      
+      if (!data.text || data.text.trim().length < 10) {
+        throw new Error("Could not extract meaningful text from PDF. It might be an image-based PDF.");
       }
+
+      return data.text;
     } catch (error) {
-      console.error('File extraction error:', error);
-      throw new Error('Failed to extract text from file');
+      throw new Error("Extraction failed: " + error.message);
     }
   }
 
   async deleteFile(filePath) {
     try {
       await fs.unlink(filePath);
-      console.log('File deleted:', filePath);
-    } catch (error) {
-      console.warn('Error deleting file:', error.message);
+    } catch (err) {
+      console.error("Cleanup error:", err.message);
     }
-  }
-
-  async getFileStats(filePath) {
-    return fs.stat(filePath);
   }
 }
 

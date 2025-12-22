@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 
 const Flashcard = () => {
   const [topic, setTopic] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
   const [flashcards, setFlashcards] = useState([]);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -10,40 +11,30 @@ const Flashcard = () => {
   const [masteredCards, setMasteredCards] = useState(new Set());
 
   const generateFlashcards = useCallback(async () => {
-    if (!topic.trim()) return;
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const response = await fetch('http://localhost:5000/api/flashcards/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic }),
-      });
+  if (!topic.trim()) return;
+  
+  setLoading(true);
+  setError(null);
+  
+  try {
+    const response = await fetch('http://localhost:5000/api/flashcards/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }, // Standard JSON
+      body: JSON.stringify({ topic }),
+    });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to generate');
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to generate');
 
-      // Ensure we have an array
-      const cards = data.flashcards || data;
-
-      const cardsWithIds = cards.map((card, idx) => ({
-        ...card,
-        id: idx
-      }));
-
-      setFlashcards(cardsWithIds);
-      setCurrentCardIndex(0);
-      setIsFlipped(false);
-      setMasteredCards(new Set());
-    } catch (err) {
-      console.error(err);
-      setError('Failed to generate cards. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  }, [topic]);
+    setFlashcards(data.flashcards.map((card, idx) => ({ ...card, id: idx })));
+    setCurrentCardIndex(0);
+    setIsFlipped(false);
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+}, [topic]);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !loading && topic.trim()) {

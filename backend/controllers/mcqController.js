@@ -1,81 +1,60 @@
-const openaiService = require('../services/openaiService');
+const aiService = require('../services/aiService');
 
-class MCQController {
-  async generateMCQs(req, res) {
-    try {
-      const { topic } = req.body;
+const generateMCQs = async (req, res) => {
+  try {
+    // 1. Get the topic from the JSON body instead of a file
+    const { topic } = req.body;
 
-      if (!topic || !topic.trim()) {
-        return res.status(400).json({ success: false, error: 'Topic is required' });
-      }
-
-      // Call openaiService directly, not the API endpoint
-      const questions = await openaiService.generateMCQs(topic);
-
-      res.json({
-        success: true,
-        topic: topic,
-        questions: questions,
-        count: questions.length,
-        generatedAt: new Date().toISOString()
-      });
-
-    } catch (error) {
-      console.error('MCQ generation error:', error);
-      res.status(500).json({ 
+    // 2. Validation: Ensure a topic was provided
+    if (!topic || topic.trim().length === 0) {
+      return res.status(400).json({ 
         success: false, 
-        error: 'Failed to generate questions',
-        ...(process.env.NODE_ENV === 'development' && { details: error.message })
+        error: "Topic is required. Please enter a subject to generate questions." 
       });
     }
+
+    console.log(`Generating MCQs for topic: ${topic}`);
+
+    // 3. Use the updated AIService (which uses llama-3.1-8b-instant)
+    const mcqs = await aiService.generateMCQs(topic);
+
+    // 4. Return the generated questions
+    res.json({ 
+      success: true, 
+      mcqs: mcqs 
+    });
+  } catch (error) {
+    console.error("MCQ Generation Error:", error.message);
+    res.status(500).json({ 
+      error: "Failed to generate MCQs.", 
+      details: error.message 
+    });
   }
+};
 
-  async validateAnswer(req, res) {
-    try {
-      const { questionId, userAnswer, correctAnswer } = req.body;
+const validateAnswer = async (req, res) => {
+  try {
+    const { userAnswer, correctAnswer } = req.body;
+    const isCorrect = userAnswer === correctAnswer;
+    res.json({ isCorrect, correctAnswer });
+  } catch (error) {
+    res.status(500).json({ error: "Validation failed." });
+  }
+};
 
-      if (userAnswer === undefined || correctAnswer === undefined) {
-        return res.status(400).json({ error: 'Both userAnswer and correctAnswer are required' });
-      }
-
-      const isCorrect = userAnswer === correctAnswer;
-
-      res.json({
-        success: true,
-        isCorrect: isCorrect,
-        userAnswer: userAnswer,
-        correctAnswer: correctAnswer
-      });
-
-    } catch (error) {
-      console.error('Answer validation error:', error);
-      res.status(500).json({ error: 'Failed to validate answer' });
+const getDefaultMCQs = async (req, res) => {
+  const defaultData = [
+    {
+      question: "Sample: What is the primary purpose of this document?",
+      options: ["Information", "Entertainment", "Sales", "Legal"],
+      correctAnswer: "Information"
     }
-  }
+  ];
+  res.json({ success: true, mcqs: defaultData });
+};
 
-  async getDefaultMCQs(req, res) {
-    try {
-      const { topic } = req.query;
-
-      if (!topic) {
-        return res.status(400).json({ error: 'Topic query parameter is required' });
-      }
-
-      const questions = openaiService.getDefaultMCQs(topic);
-
-      res.json({
-        success: true,
-        topic: topic,
-        questions: questions,
-        count: questions.length,
-        note: 'Default questions (AI service unavailable)'
-      });
-
-    } catch (error) {
-      console.error('Error getting default MCQs:', error);
-      res.status(500).json({ error: 'Failed to get questions' });
-    }
-  }
-}
-
-module.exports = new MCQController();
+module.exports = {
+  generateMCQs,
+  validateAnswer,
+  getDefaultMCQs
+};
