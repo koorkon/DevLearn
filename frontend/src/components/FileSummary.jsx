@@ -26,8 +26,8 @@ const FileSummary = () => {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File size must be less than 5MB');
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size must be less than 10MB');
       return;
     }
 
@@ -35,7 +35,7 @@ const FileSummary = () => {
     setSummary('');
     setUploadProgress(0);
     setIsCopied(false);
-    setStats(null); // Reset stats
+    setStats(null); 
 
     // Start the API call to generate the summary
     generateSummaryFromAPI(file);
@@ -90,8 +90,6 @@ const FileSummary = () => {
             const errorData = await response.json();
             errorMsg = errorData.error || errorMsg;
         } catch (e) {
-            // If response is not JSON, use the default message
-        }
         throw new Error(errorMsg);
       }
 

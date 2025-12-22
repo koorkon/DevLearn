@@ -1,23 +1,7 @@
-<<<<<<< HEAD
-import React from 'react'
-import { Routes, Route } from 'react-router-dom'
-import { Analytics } from '@vercel/analytics/react'
-import { AppProvider } from './context/AppContext'
-import Header from './components/common/Header'
-import Footer from './components/common/Footer'
-import Home from './pages/Home'
-import Dashboard from './pages/Dashboard'
-import UploadPage from './pages/UploadPage'
-import SummaryPage from './pages/SummaryPage'
-import McqPage from './pages/McqPage'
-import FlashcardPage from './pages/FlashcardPage'
-import NotFound from './pages/NotFound'
-=======
 import React, { useState } from 'react'
 import FileSummary from './components/FileSummary'
 import Flashcard from './components/Flashcards'
 import MCQGenerator from './components/MCQGenerator'
->>>>>>> feature/UI
 
 function App() {
   const [activeView, setActiveView] = useState('file')
@@ -49,26 +33,6 @@ function App() {
   const CurrentComponent = views[activeView].component
 
   return (
-<<<<<<< HEAD
-    <AppProvider>
-      <div className="min-h-screen bg-gradient-to-br from-pastel-blue via-pastel-purple to-pastel-pink">
-        <Header />
-        <main className="container mx-auto px-4 py-8">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/upload" element={<UploadPage />} />
-            <Route path="/summaries" element={<SummaryPage />} />
-            <Route path="/mcqs" element={<McqPage />} />
-            <Route path="/flashcards" element={<FlashcardPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </main>
-        <Footer />
-        <Analytics />
-      </div>
-    </AppProvider>
-=======
     <div className="relative min-h-screen overflow-hidden vite-gradient">
       {/* Animated background elements */}
       <div className="absolute top-0 left-0 rounded-full w-96 h-96 bg-blue-500/5 blur-3xl animate-pulse"></div>
@@ -226,7 +190,6 @@ function App() {
         </div>
       </footer>
     </div>
->>>>>>> feature/UI
   )
 }
 
