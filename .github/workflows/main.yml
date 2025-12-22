@@ -1,15 +1,11 @@
 name: DevLearn CI/CD Pipeline
 
-# on:
-#   push:
-#     branches: [ "main", "feature/UI" ] # Runs when you push to these branches
-#   pull_request:
-#     branches: [ "main" ]
-
 on:
   push:
-    branches: [ feature/UI ]
-  workflow_dispatch: # This allows you to click a "Run" button on GitHub
+    branches: [ "main", "feature/UI" ] # Runs when you push to these branches
+  pull_request:
+    branches: [ "main" ]
+
 
 jobs:
   test:
@@ -37,7 +33,7 @@ jobs:
           npx vitest run # 'run' executes tests once and exits
 
   build-and-push:
-    needs: test # Only runs if the 'test' job passes
+    needs: test 
     runs-on: ubuntu-latest
     if: github.event_name == 'push' # Only push to Docker Hub on actual code pushes
     steps:
@@ -62,3 +58,11 @@ jobs:
           context: ./frontend
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/devlearn-frontend:latest
+      
+      - name: Verify Deployment Files
+        run: |
+          if [ -f "./docker-compose.yml" ]; then
+            echo "✅ Docker Compose file found."
+          else
+            echo "⚠️ Warning: docker-compose.yml not found in root."
+          fi
