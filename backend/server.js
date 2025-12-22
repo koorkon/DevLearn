@@ -19,16 +19,10 @@ const apiLimiter = rateLimit({
 });
 
 app.use(cors({
-<<<<<<< HEAD
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
-=======
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true
->>>>>>> dfbe23a (Final website commit)
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -47,31 +41,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-<<<<<<< HEAD
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({ error: 'Route not found' });
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Error:', err.stack);
-  res.status(err.status || 500).json({
-    error: err.message || 'Internal server error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-  });
-});
-
-// Start server
-if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
-    console.log(`🚀 DevLearn Backend Server running on port ${PORT}`);
-  });
-}
-module.exports = app;
-=======
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📝 Summary API: http://localhost:${PORT}/api/summary/upload`);
 });
->>>>>>> dfbe23a (Final website commit)
