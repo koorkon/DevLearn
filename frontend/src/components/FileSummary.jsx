@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 
 // Define the API URL based on your backend configuration
-// Your server runs on port 5000 and the summary route is '/api/summary'
 const API_URL = 'http://localhost:5000/api/summary/upload'; 
 
 const FileSummary = () => {
@@ -11,7 +10,6 @@ const FileSummary = () => {
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isCopied, setIsCopied] = useState(false);
-  // stats object will hold { originalLength, summaryLength, reductionPercentage }
   const [stats, setStats] = useState(null); 
 
   const handleFileSelect = (event) => {
@@ -37,7 +35,6 @@ const FileSummary = () => {
     setIsCopied(false);
     setStats(null); 
 
-    // Start the API call to generate the summary
     generateSummaryFromAPI(file);
   };
 
@@ -46,32 +43,27 @@ const FileSummary = () => {
       navigator.clipboard.writeText(summary)
         .then(() => {
           setIsCopied(true);
-          setTimeout(() => {
-            setIsCopied(false);
-          }, 2000); 
+          setTimeout(() => setIsCopied(false), 2000); 
         })
         .catch(err => {
           console.error('Failed to copy text: ', err);
-          alert('Failed to copy summary. Please try again.');
+          alert('Failed to copy summary.');
         });
     }
   };
 
-  /**
-   * Handles file upload and summary generation by calling the backend API.
-   * @param {File} file The file selected by the user.
-   */
   const generateSummaryFromAPI = async (file) => {
     setLoading(true);
-    setUploadProgress(10); // Start progress
+    setUploadProgress(10);
 
     const formData = new FormData();
-    // 'file' must match the field name used in the multer configuration ('upload.single('file')')
     formData.append('file', file); 
 
+    // Create a variable to store the interval so we can clear it in finally
+    let progressInterval;
+
     try {
-      // Simulate Upload/Processing Progress (up to 90%)
-      const progressInterval = setInterval(() => {
+      progressInterval = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 500);
 
@@ -80,16 +72,16 @@ const FileSummary = () => {
         body: formData,
       });
 
-      // Clear the simulation interval once the request is complete
       clearInterval(progressInterval);
 
       if (!response.ok) {
-        // Attempt to parse JSON error response for specific message
         let errorMsg = `Server responded with status: ${response.status}`;
         try {
             const errorData = await response.json();
             errorMsg = errorData.error || errorMsg;
         } catch (e) {
+            // If parsing JSON fails, keep the default errorMsg
+        }
         throw new Error(errorMsg);
       }
 
@@ -98,9 +90,8 @@ const FileSummary = () => {
       if (data.success) {
         setSummary(data.summary);
         setStats(data.stats); 
-        setUploadProgress(100); // Complete progress
+        setUploadProgress(100);
       } else {
-        // Handle server-side failure that returns 200 status but success: false
         throw new Error(data.error || 'Summary generation failed on the server.');
       }
 
@@ -110,6 +101,7 @@ const FileSummary = () => {
       setStats(null);
       setUploadProgress(0);
     } finally {
+      if (progressInterval) clearInterval(progressInterval);
       setLoading(false);
     }
   };
@@ -217,14 +209,12 @@ const FileSummary = () => {
                 </button>
               </div>
 
-              {/* Summary Text */}
               <div className="mb-6 max-h-[400px] overflow-y-auto pr-2">
                 <p className={`text-lg font-light leading-relaxed whitespace-pre-wrap ${summary.startsWith("Error:") ? 'text-red-400' : 'text-white'}`}>
                   {summary}
                 </p>
               </div>
 
-              {/* Summary Statistics - Only show if stats are available and no error */}
               {currentStats && !summary.startsWith("Error:") && (
                 <div className="flex items-center justify-around pt-4 border-t border-white/10">
                   <div className="text-center">
@@ -249,7 +239,6 @@ const FileSummary = () => {
               )}
             </div>
           ) : (
-            // Empty state
             <div className="flex items-center justify-center h-full border glass-dark rounded-2xl border-white/10 min-h-96">
               <div className="p-8 text-center text-gray-400">
                 <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 border rounded-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 border-blue-500/30">
