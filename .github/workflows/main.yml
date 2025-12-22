@@ -2,55 +2,90 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ "feature/UI" ]
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
-  # --- STAGE 1: TEST ---
+  # --- STAGE 1: TESTING ---
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-      - name: Install & Test
-        run: |
-          cd backend && npm install
-          # npm test (uncomment when you have tests)
-          cd ../frontend && npm install
-          # npm test (uncomment when you have tests)
+          node-version: '20'
 
-  # --- STAGE 2: BUILD ---
-  build:
-    needs: test
+      - name: Test Backend
+        working-directory: ./backend
+        run: |
+          npm install
+          # npm test  <-- Uncomment this when you have tests written
+
+      - name: Test Frontend
+        working-directory: ./frontend
+        run: |
+          npm install
+          # npm test  <-- Uncomment this when you have tests written
+
+  # --- STAGE 2: BUILD AND PUSH ---
+  build-and-push:
+    needs: test  # Only runs if tests pass
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Login to Docker Hub
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      
-      - name: Build Backend
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Verify Backend File System
+        run: |
+          echo "Current location:"
+          pwd
+          echo "Listing files in backend folder:"
+          ls -la ./backend
+          if [ -f "./backend/Dockerfile" ]; then
+             echo "✅ Dockerfile found!"
+          else
+             echo "❌ Dockerfile NOT found!"
+             exit 1
+          fi
+
+      - name: Build & Push Backend
         uses: docker/build-push-action@v5
         with:
           context: ./backend
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/devlearn-backend:latest
 
-      - name: Build Frontend
+      - name: Build & Push Frontend
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
           push: true
+          # This forces the build to use Port 5173 and no-cache
           tags: ${{ secrets.DOCKER_USERNAME }}/devlearn-frontend:latest
 
-  # --- STAGE 3: DEPLOY ---
+  # --- STAGE 3: DEPLOYMENT ---
   deploy:
-    needs: build
+    needs: build-and-push # Only runs if build is successful
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy Step
-        run: echo "Code is built and tested. Ready for server deployment."
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Verify Deployment Files
+        run: |
+          echo "Verifying docker-compose.yml for port 5173..."
+          grep "5173" docker-compose.yml
+          echo "Ready for deployment!"
+

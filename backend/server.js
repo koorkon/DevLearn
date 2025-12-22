@@ -26,7 +26,7 @@ const limiter = rateLimit({
 app.use(helmet());
 app.use(limiter);
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: process.env.FRONTEND_URL || 'http://localhost:5137',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -66,14 +66,9 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`
-  🚀 DevLearn Backend Server running!
-  📍 Port: ${PORT}
-  🌍 Environment: ${process.env.NODE_ENV || 'development'}
-  🔗 Health Check: http://localhost:${PORT}/api/health
-  🎯 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}
-  `);
-});
-
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`🚀 DevLearn Backend Server running on port ${PORT}`);
+  });
+}
 module.exports = app;

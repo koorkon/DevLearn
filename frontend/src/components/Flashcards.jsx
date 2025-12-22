@@ -23,10 +23,12 @@ const Flashcard = () => {
       });
 
       const data = await response.json();
-
       if (!response.ok) throw new Error(data.error || 'Failed to generate');
 
-      const cardsWithIds = data.flashcards.map((card, idx) => ({
+      // Ensure we have an array
+      const cards = data.flashcards || data;
+
+      const cardsWithIds = cards.map((card, idx) => ({
         ...card,
         id: idx
       }));
@@ -43,6 +45,12 @@ const Flashcard = () => {
     }
   }, [topic]);
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !loading && topic.trim()) {
+      generateFlashcards();
+    }
+  };
+
   const toggleMastered = (index) => {
     const newMastered = new Set(masteredCards);
     if (newMastered.has(index)) {
@@ -57,20 +65,21 @@ const Flashcard = () => {
     return (
       <div className="p-8">
         <div className="max-w-md mx-auto">
-          <h2 className="text-2xl font-bold text-white mb-6">Smart Flashcards</h2>
-          {error && <p className="text-red-400 mb-4">{error}</p>}
-          <div className="glass-dark rounded-xl p-6 border border-white/10 space-y-4">
+          <h2 className="mb-6 text-2xl font-bold text-white">Smart Flashcards</h2>
+          {error && <p className="mb-4 text-red-400">{error}</p>}
+          <div className="p-6 space-y-4 border glass-dark rounded-xl border-white/10">
             <input
               type="text"
-              placeholder="Enter topic (e.g., Biology)"
+              placeholder="Enter topic (e.g., Biology) + Enter"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              className="w-full bg-black/30 text-white border border-white/20 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-gray-500"
+              onKeyDown={handleKeyDown}
+              className="w-full p-3 text-white placeholder-gray-500 border rounded-lg bg-black/30 border-white/20 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
             <button
               onClick={generateFlashcards}
               disabled={loading || !topic.trim()}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg font-bold hover:shadow-lg disabled:opacity-50 transition-all"
+              className="w-full py-3 font-bold text-white transition-all rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:shadow-lg disabled:opacity-50"
             >
               {loading ? 'Generating...' : 'Generate Flashcards'}
             </button>
@@ -81,51 +90,62 @@ const Flashcard = () => {
   }
 
   const currentCard = flashcards[currentCardIndex];
-  const filteredCards = flashcards.filter((_, idx) => !masteredCards.has(idx));
   const masteredCount = masteredCards.size;
 
   return (
     <div className="p-8">
       <div className="max-w-2xl mx-auto">
-        <div className="mb-6 flex justify-between items-center">
+        <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white">{topic}</h2>
           <span className="text-gray-400">
             {currentCardIndex + 1}/{flashcards.length} | Mastered: {masteredCount}
           </span>
         </div>
 
-        {/* Progress Bar */}
-        <div className="w-full bg-white/10 rounded-full h-2 mb-8">
+        <div className="w-full h-2 mb-8 rounded-full bg-white/10">
           <div
-            className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all"
+            className="h-2 transition-all duration-500 rounded-full bg-gradient-to-r from-purple-500 to-pink-500"
             style={{ width: `${((currentCardIndex + 1) / flashcards.length) * 100}%` }}
           ></div>
         </div>
 
-        {/* Flashcard */}
-        <div
-          onClick={() => setIsFlipped(!isFlipped)}
-          className="glass-dark rounded-2xl border border-white/10 p-8 min-h-64 cursor-pointer flex flex-col justify-center items-center text-center mb-8 transition-all hover:shadow-lg"
-        >
-          <p className="text-sm text-gray-400 mb-4">
-            {isFlipped ? 'Answer' : 'Question'} • Click to flip
-          </p>
-          <div className="text-2xl font-bold text-white mb-4">
-            {isFlipped ? currentCard.back : currentCard.front}
+        {/* 🚀 3D FLASHCARD FIX */}
+        <div className="[perspective:1000px] w-full h-80 mb-8">
+          <div 
+            onClick={() => setIsFlipped(!isFlipped)}
+            className={`relative w-full h-full transition-transform duration-500 [transform-style:preserve-3d] cursor-pointer ${isFlipped ? '[transform:rotateY(180deg)]' : ''}`}
+          >
+            {/* Front Face (Question) */}
+            <div className="absolute inset-0 w-full h-full [backface-visibility:hidden] glass-dark rounded-2xl border border-white/10 p-8 flex flex-col justify-center items-center text-center">
+              <p className="mb-4 font-mono text-sm text-gray-400">QUESTION</p>
+              <div className="text-2xl font-bold text-white">
+                {/* 🚀 FIXED: Fallback to .question if .front is missing */}
+                {currentCard.front || currentCard.question || "No Question Provided"}
+              </div>
+              {(currentCard.category || currentCard.difficulty) && (
+                <span className="px-3 py-1 mt-4 text-xs text-purple-200 uppercase rounded-full bg-purple-500/30">
+                  {currentCard.category || currentCard.difficulty}
+                </span>
+              )}
+            </div>
+
+            {/* Back Face (Answer) */}
+            <div className="absolute inset-0 w-full h-full [backface-visibility:hidden] [transform:rotateY(180deg)] glass-dark rounded-2xl border border-purple-500/30 p-8 flex flex-col justify-center items-center text-center bg-purple-900/20">
+              <p className="mb-4 font-mono text-sm text-purple-400">ANSWER</p>
+              <div className="text-2xl font-semibold text-white">
+                {/* 🚀 FIXED: Fallback to .answer or .back */}
+                {currentCard.back || currentCard.answer || "No Answer Provided"}
+              </div>
+            </div>
           </div>
-          {currentCard.category && (
-            <span className="text-xs bg-purple-500/30 text-purple-200 px-3 py-1 rounded-full">
-              {currentCard.category}
-            </span>
-          )}
         </div>
 
         {/* Controls */}
-        <div className="flex gap-3 justify-between">
+        <div className="flex justify-between gap-3">
           <button
-            onClick={() => setCurrentCardIndex(Math.max(0, currentCardIndex - 1))}
+            onClick={() => { setCurrentCardIndex(Math.max(0, currentCardIndex - 1)); setIsFlipped(false); }}
             disabled={currentCardIndex === 0}
-            className="px-6 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 disabled:opacity-50 transition-all"
+            className="px-6 py-2 text-white transition-all rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-50"
           >
             ← Previous
           </button>
@@ -142,26 +162,22 @@ const Flashcard = () => {
           </button>
 
           <button
-            onClick={() => setCurrentCardIndex(Math.min(flashcards.length - 1, currentCardIndex + 1))}
+            onClick={() => { setCurrentCardIndex(Math.min(flashcards.length - 1, currentCardIndex + 1)); setIsFlipped(false); }}
             disabled={currentCardIndex === flashcards.length - 1}
-            className="px-6 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 disabled:opacity-50 transition-all"
+            className="px-6 py-2 text-white transition-all rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-50"
           >
             Next →
           </button>
         </div>
 
-        {/* Reset Button */}
-        {filteredCards.length === 0 && (
-          <div className="text-center mt-8">
-            <p className="text-green-400 text-lg font-bold mb-4">🎉 All cards mastered!</p>
+        {masteredCount === flashcards.length && (
+          <div className="p-6 mt-8 text-center border bg-green-500/10 rounded-xl border-green-500/20">
+            <p className="mb-4 text-lg font-bold text-green-400">🎉 Mastery Achieved!</p>
             <button
-              onClick={() => {
-                setTopic('');
-                setFlashcards([]);
-              }}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg"
+              onClick={() => { setTopic(''); setFlashcards([]); }}
+              className="px-8 py-3 font-bold text-white rounded-lg bg-gradient-to-r from-purple-500 to-pink-500"
             >
-              Try Another Topic
+              Try New Topic
             </button>
           </div>
         )}

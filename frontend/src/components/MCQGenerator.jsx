@@ -26,7 +26,17 @@ const MCQGenerator = () => {
       });
       
       if (!response.ok) {
-        throw new Error(`Server error: ${response.status}`);
+        // 🚀 CRITICAL FIX: Attempt to read the specific error message from the back-end
+        let errorData = {};
+        try {
+            errorData = await response.json();
+        } catch(e) {
+            // If the server didn't send JSON, throw a generic network error
+            throw new Error(`Server returned status ${response.status}. Check server console.`);
+        }
+        
+        // Throw an error using the specific detail message (details key is from mcqController)
+        throw new Error(errorData.details || errorData.error || `Server error: ${response.status}`);
       }
 
       const data = await response.json();
@@ -38,12 +48,19 @@ const MCQGenerator = () => {
         setScore(0);
         setShowResults(false);
       } else {
-        setError(data.error || 'Failed to generate questions. Please try again.');
+        // Handle case where success is true but no questions were returned (unlikely with service fix)
+        setError(data.error || 'Failed to generate questions. Try a different topic.');
         setQuestions([]);
       }
     } catch (error) {
       console.error("Failed to fetch MCQs:", error);
-      setError('Unable to connect to the service. Please try again.');
+      
+      // 🚀 CRITICAL FIX: Display the specific error message to the user
+      if (error.message.includes('Failed to fetch')) {
+           setError('Unable to connect to back-end server. Ensure Node.js server is running.');
+      } else {
+           setError(error.message); // This displays the detailed AI error
+      }
       setQuestions([]);
     } finally {
       setLoading(false);
@@ -60,7 +77,8 @@ const MCQGenerator = () => {
   const submitQuiz = () => {
     let correctCount = 0;
     questions.forEach((q, idx) => {
-      if (userAnswers[idx] === q.correctAnswer) {
+      // Comparison now works because q.correctAnswer is guaranteed to be a number (from service fix)
+      if (userAnswers[idx] === q.correctAnswer) { 
         correctCount++;
       }
     });
@@ -78,25 +96,31 @@ const MCQGenerator = () => {
     setError(null);
   };
 
-  // Initial state - Input screen
+  // --- RENDERING LOGIC ---
+
   if (questions.length === 0) {
     return (
       <div className="p-8">
         <div className="max-w-xl mx-auto">
-          <h2 className="text-2xl font-bold text-white mb-6">Generate Questions</h2>
+          <h2 className="mb-6 text-2xl font-bold text-white">Generate Questions</h2>
           
           {error && (
-            <div className="glass-dark rounded-xl p-4 border border-red-500/30 bg-red-500/10 mb-6">
-              <p className="text-red-300 text-sm flex items-start">
+            <div className="p-4 mb-6 border glass-dark rounded-xl border-red-500/30 bg-red-500/10">
+              <p className="flex items-start text-sm text-red-300">
                 <span className="mr-3">⚠️</span>
                 <span>{error}</span>
               </p>
+              {error.includes('AI service temporarily unavailable') && (
+                <p className="mt-2 text-xs font-semibold text-red-300">
+                  **Action Required:** Please check your back-end server console for the exact OpenAI error message (e.g., "Invalid API Key" or "Quota Exceeded").
+                </p>
+              )}
             </div>
           )}
 
-          <div className="glass-dark rounded-xl p-6 border border-white/10 space-y-4">
+           <div className="p-6 space-y-4 border glass-dark rounded-xl border-white/10">
             <label className="block">
-              <span className="text-gray-300 font-semibold block mb-2">Topic</span>
+              <span className="block mb-2 font-semibold text-gray-300">Topic</span>
               <input
                 type="text"
                 placeholder="e.g., Machine Learning, Biology, History"
@@ -104,18 +128,18 @@ const MCQGenerator = () => {
                 onChange={(e) => setTopic(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && generateQuestions()}
                 disabled={loading}
-                className="w-full bg-black/30 text-white border border-white/20 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-500 placeholder-gray-500 disabled:opacity-50"
+                className="w-full p-3 text-white placeholder-gray-500 border rounded-lg bg-black/30 border-white/20 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
               />
             </label>
 
             <button
               onClick={generateQuestions}
               disabled={loading || !topic.trim()}
-              className="w-full bg-gradient-to-r from-green-500 to-emerald-400 text-white py-3 rounded-lg font-bold hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="w-full py-3 font-bold text-white transition-all rounded-lg bg-gradient-to-r from-green-500 to-emerald-400 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <span className="flex items-center justify-center">
-                  <span className="animate-spin mr-2">⏳</span> Generating Questions...
+                  <span className="mr-2 animate-spin">⏳</span> Generating Questions...
                 </span>
               ) : (
                 'Generate Questions'
@@ -127,7 +151,7 @@ const MCQGenerator = () => {
     );
   }
 
-  // Quiz display screen
+  // Quiz display screen (same as before)
   if (!showResults) {
     const currentQuestion = questions[currentQuestionIndex];
     const answeredCount = Object.keys(userAnswers).length;
@@ -137,26 +161,26 @@ const MCQGenerator = () => {
         <div className="max-w-3xl mx-auto">
           {/* Progress */}
           <div className="mb-6">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-white">Question {currentQuestionIndex + 1}/{questions.length}</h2>
-              <span className="text-gray-400 text-sm">
+              <span className="text-sm text-gray-400">
                 {answeredCount}/{questions.length} answered
               </span>
             </div>
-            <div className="w-full bg-white/10 rounded-full h-2">
+            <div className="w-full h-2 rounded-full bg-white/10">
               <div
-                className="bg-gradient-to-r from-green-500 to-emerald-400 h-2 rounded-full transition-all"
+                className="h-2 transition-all rounded-full bg-gradient-to-r from-green-500 to-emerald-400"
                 style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
               ></div>
             </div>
           </div>
 
           {/* Question Card */}
-          <div className="glass-dark rounded-xl p-8 border border-white/10 mb-8">
-            <h3 className="text-xl font-bold text-white mb-8">{currentQuestion.question}</h3>
+          <div className="p-8 mb-8 border glass-dark rounded-xl border-white/10">
+            <h3 className="mb-8 text-xl font-bold text-white">{currentQuestion.question}</h3>
 
             {/* Options */}
-            <div className="space-y-3 mb-8">
+            <div className="mb-8 space-y-3">
               {currentQuestion.options.map((option, index) => (
                 <label
                   key={index}
@@ -183,7 +207,7 @@ const MCQGenerator = () => {
               <button
                 onClick={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
                 disabled={currentQuestionIndex === 0}
-                className="px-6 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="px-6 py-2 text-white transition-all rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 ← Previous
               </button>
@@ -191,14 +215,15 @@ const MCQGenerator = () => {
               {currentQuestionIndex === questions.length - 1 ? (
                 <button
                   onClick={submitQuiz}
-                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-400 text-white py-2 rounded-lg font-bold hover:shadow-lg transition-all"
+                  className="flex-1 py-2 font-bold text-white transition-all rounded-lg bg-gradient-to-r from-green-500 to-emerald-400 hover:shadow-lg"
                 >
                   Submit Quiz
                 </button>
               ) : (
                 <button
                   onClick={() => setCurrentQuestionIndex(currentQuestionIndex + 1)}
-                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-400 text-white py-2 rounded-lg font-bold hover:shadow-lg transition-all"
+                  disabled={userAnswers[currentQuestionIndex] === undefined}
+                  className="flex-1 py-2 font-bold text-white transition-all rounded-lg bg-gradient-to-r from-green-500 to-emerald-400 hover:shadow-lg"
                 >
                   Next →
                 </button>
@@ -210,24 +235,24 @@ const MCQGenerator = () => {
     );
   }
 
-  // Results screen
+  // Results screen (FIXED DISPLAY LOGIC)
   return (
     <div className="p-8">
       <div className="max-w-2xl mx-auto">
-        <div className="glass-dark rounded-xl p-8 border border-white/10 text-center">
+        <div className="p-8 text-center border glass-dark rounded-xl border-white/10">
           <div className="mb-6">
-            <p className="text-6xl mb-4">
+            <p className="mb-4 text-6xl">
               {score === questions.length ? '🎉' : score >= questions.length / 2 ? '✅' : '💪'}
             </p>
-            <h2 className="text-3xl font-bold text-white mb-2">Quiz Complete!</h2>
+            <h2 className="mb-2 text-3xl font-bold text-white">Quiz Complete!</h2>
           </div>
 
           {/* Score Card */}
-          <div className="bg-black/30 rounded-lg p-6 mb-6">
-            <p className="text-5xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent mb-2">
+          <div className="p-6 mb-6 rounded-lg bg-black/30">
+            <p className="mb-2 text-5xl font-bold text-transparent bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text">
               {score}/{questions.length}
             </p>
-            <p className="text-xl text-gray-300 mb-4">
+            <p className="mb-4 text-xl text-gray-300">
               {Math.round((score / questions.length) * 100)}% Correct
             </p>
             <p className="text-gray-400">
@@ -240,35 +265,56 @@ const MCQGenerator = () => {
           </div>
 
           {/* Answer Review */}
-          <div className="space-y-4 mb-8 max-h-64 overflow-y-auto">
-            {questions.map((q, idx) => (
-              <div
-                key={idx}
-                className={`p-4 rounded-lg border ${
-                  userAnswers[idx] === q.correctAnswer
-                    ? 'bg-green-500/10 border-green-500/30'
-                    : 'bg-red-500/10 border-red-500/30'
-                }`}
-              >
-                <p className="text-sm text-gray-300 mb-2">
-                  <span className={userAnswers[idx] === q.correctAnswer ? 'text-green-400' : 'text-red-400'}>
-                    Q{idx + 1}: {userAnswers[idx] === q.correctAnswer ? '✓' : '✗'}
-                  </span>
-                </p>
-                {userAnswers[idx] !== q.correctAnswer && (
-                  <p className="text-xs text-gray-400">
-                    <strong>Correct Answer:</strong> {q.options[q.correctAnswer]}
+          <div className="mb-8 space-y-4 overflow-y-auto max-h-96">
+            {questions.map((q, idx) => {
+              const isCorrect = userAnswers[idx] === q.correctAnswer;
+              // Check if the user answered the question
+              const userAnswered = userAnswers[idx] !== undefined; 
+              // Get the option text for display
+              const userAnswerOption = userAnswered ? q.options[userAnswers[idx]] : 'No Answer Selected';
+              const correctAnswerOption = q.options[q.correctAnswer];
+
+              return (
+                <div
+                  key={idx}
+                  className={`p-4 rounded-lg border text-left transition-all ${
+                    isCorrect
+                      ? 'bg-green-500/10 border-green-500/30'
+                      : 'bg-red-500/10 border-red-500/30'
+                  }`}
+                >
+                  <p className="mb-3 text-sm font-bold text-gray-200">
+                    Q{idx + 1}: {q.question}
                   </p>
-                )}
-              </div>
-            ))}
+
+                  <div className="space-y-2 text-sm">
+                    {/* Display User's Answer in Red or Green Box */}
+                    <p className={`p-2 rounded-md ${
+                        isCorrect 
+                          ? 'bg-green-500 text-white font-semibold' 
+                          : 'bg-red-500 text-white font-semibold'
+                      }`}
+                    >
+                      {isCorrect ? '✓ Your Answer:' : '✗ Your Answer:'} {userAnswerOption}
+                    </p>
+                    
+                    {/* Only display the correct answer separately if the user got it wrong */}
+                    {!isCorrect && (
+                       <p className="p-2 font-semibold text-white rounded-md bg-green-700/80">
+                          Correct Answer: {correctAnswerOption}
+                       </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* Action Buttons */}
           <div className="flex gap-3">
             <button
               onClick={resetQuiz}
-              className="flex-1 bg-gradient-to-r from-green-500 to-emerald-400 text-white py-3 rounded-lg font-bold hover:shadow-lg transition-all"
+              className="flex-1 py-3 font-bold text-white transition-all rounded-lg bg-gradient-to-r from-green-500 to-emerald-400 hover:shadow-lg"
             >
               Try Another Topic
             </button>
