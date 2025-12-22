@@ -24,14 +24,14 @@ jobs:
           NODE_ENV: test
         run: |
           npm install
+          npm audit --audit-level=high
           npm test  
 
       - name: Test Frontend
         working-directory: ./frontend
         run: |
           npm install
-          # Note: If you don't have frontend tests yet, change this to 'npm run build'
-          # to ensure it compiles correctly.
+          npm audit --audit-level=high --only=prod
           npm test || echo "No tests found, skipping..."
 
   build-and-push:
