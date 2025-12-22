@@ -2,7 +2,7 @@
 import React, { useState } from 'react'
 import FileSummary from './components/FileSummary'
 import Flashcard from './components/Flashcards'
-import MCQGenerator from './components/McqGenerator'
+import MCQGenerator from './components/MCQGenerator'
 
 function App() {
   const [activeView, setActiveView] = useState('file')
